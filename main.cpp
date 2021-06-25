@@ -3,6 +3,9 @@
 #include "keyboard.h"	//キーボードの処理
 #include "FPS.h"		//FPSの処理
 
+//マクロ定義
+#define TAMA_DIV_MAX	4	//弾の画像の最大数
+
 //構造体の定義
 
 //画像の構造体
@@ -74,6 +77,12 @@ int fadeInCntInit = fadeTimeMax;	//初期値
 int fadeInCnt = fadeInCntInit;		//フェードアウトのカウンタ
 int fadeInCntMax = fadeTimeMax;		//フェードアウトのカウンタMAX
 
+//弾の画像のハンドル
+int Tama[TAMA_DIV_MAX];
+int TamaIndex = 0;			//画像の添字
+int TamaChangeCnt = 0;		//画像を変えるタイミング
+int TamaChangeCntMax = 30;	//画像を変えるタイミングMAX
+
 //プロトタイプ宣言
 VOID Title(VOID);		//タイトル画面
 VOID TitleProc(VOID);	//タイトル画面(処理)
@@ -102,6 +111,7 @@ BOOL GameLoad(VOID);	//ゲームのデータを読み込み
 
 BOOL LoadImageMem(IMAGE* image, const char* path);							//ゲームの画像を読み込み
 BOOL LoadAudio(AUDIO* audio, const char* path, int volume, int playType);	//ゲームの音楽を読み込み
+BOOL LoadImageDivMem(int* handle, const char* path, int bunkatuYoko, int BunkatuTate);	//ゲームの画像の分割読み込み
 
 VOID GameInit(VOID);	//ゲームのデータの初期化
 
@@ -211,6 +221,9 @@ int WINAPI WinMain(
 		ScreenFlip();	//ダブルバッファリングした画面を描画
 	}
 
+	//読み込んだ画像を開放
+	for (int i = 0; i < TAMA_DIV_MAX; i++) { DeleteGraph(Tama[i]); }
+
 	//ＤＸライブラリ使用の終了処理
 	DxLib_End();
 
@@ -221,31 +234,42 @@ int WINAPI WinMain(
 /// ゲームのデータを読み込み
 /// </summary>
 /// <returns>読み込めたらTRUE / 読み込めなかったらFALSE</returns>
+/// <summary>
 BOOL GameLoad(VOID)
 {
+	//画像を分割して読み込み
+	if (LoadImageDivMem(&Tama[0], ".\\Image\\Tama.png", 4, 1) == FALSE) { return FALSE; }
 
 	return TRUE;	//全て読み込みた！
 }
 
-/// <summary>
-/// 画像をメモリに読み込み
-/// </summary>
-/// <param name="image">画像構造体のアドレス</param>
-/// <param name="path">画像のパス</param>
-/// <returns></returns>
-BOOL LoadImageMem(IMAGE* image, const char* path)
-{
-	//ゴールの画像を読み込み
-	strcpyDx(image->path, path);	//パスのコピー
-	image->handle = LoadGraph(image->path);	//画像の読み込み
 
-	//画像が読み込めなかったときは、エラー(-1)が入る
-	if (image->handle == -1)
+/// <summary>
+/// 画像を分割してメモリに読み込み
+/// </summary>
+/// <param name="handle">ハンドル配列の先頭アドレス</param>
+/// <param name="path">画像のパス</param>
+/// <param name="bunkatuYoko">分割するときの横の数</param>
+/// <param name="bunkatuYoko">分割するときの縦の数</param>
+/// <returns></returns>
+BOOL LoadImageDivMem(int* handle, const char* path, int bunkatuYoko, int bunkatuTate)
+{
+	//弾のパス
+	const char* TamaPath = ".\\Image\\Tama.png";
+
+	//弾の読み込み
+	int IsTamaLoad = -1;	//画像が読み込みたか？
+
+	//一時的に画像のハンドルを用意する
+	int TamaHandle = LoadGraph(path);
+
+	//読み込みエラー
+	if (TamaHandle == -1)
 	{
 		MessageBox(
-			GetMainWindowHandle(),	//メインのウィンドウハンドル
-			image->path,			//メッセージ本文
-			"画像読み込みエラー！",		//メッセージタイトル
+			GetMainWindowHandle(),	//ウィンドウハンドル
+			path,					//本文
+			"画像読み込みエラー",	//タイトル
 			MB_OK					//ボタン
 		);
 
@@ -253,7 +277,34 @@ BOOL LoadImageMem(IMAGE* image, const char* path)
 	}
 
 	//画像の幅と高さを取得
-	GetGraphSize(image->handle, &image->width, &image->height);
+	int TamaWidth = -1;		//幅
+	int TamaHeight = -1;	//高さ
+	GetGraphSize(TamaHandle, &TamaWidth, &TamaHeight);
+
+	//分割して読み込み
+	IsTamaLoad = LoadDivGraph(
+		path,						//画像のパス
+		TAMA_DIV_MAX,					//分割総数
+		4, 1,							//横の分割,縦の分割
+		TamaWidth / 4, TamaHeight / 1,	//画像1つ分の幅,高さ
+		handle							//連続で管理する配列の先頭アドレス
+	);
+
+	//分割エラー
+	if (IsTamaLoad == -1)
+	{
+		MessageBox(
+			GetMainWindowHandle(),	//ウィンドウハンドル
+			path,				//本文
+			"画像分割エラー",		//タイトル
+			MB_OK					//ボタン
+		);
+
+		return FALSE;	//読み込み失敗
+	}
+
+	//一時的に読み込んだハンドルを解放
+	DeleteGraph(TamaHandle);
 
 	//読み込めた
 	return TRUE;
@@ -354,6 +405,28 @@ VOID TitleProc(VOID)
 /// </summary>
 VOID TitleDraw(VOID)
 {
+	//弾の描画
+	DrawGraph(0, 0, Tama[TamaIndex], TRUE);
+
+	//画像を変えるタイミング
+	if (TamaChangeCnt < TamaChangeCntMax)
+	{
+		TamaChangeCnt++;
+	}
+	else
+	{
+		//弾の添字が弾の分割数の最大よりも小さい時
+		if (TamaIndex < TAMA_DIV_MAX - 1)
+		{
+			TamaIndex++;	//次の画像へ
+		}
+		else
+		{
+			TamaIndex = 0;	//最初に戻す
+		}
+
+	}
+
 	DrawString(0, 0, "タイトル画面", GetColor(0, 0, 0));
 	return;
 }
