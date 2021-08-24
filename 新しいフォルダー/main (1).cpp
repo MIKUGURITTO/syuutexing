@@ -130,28 +130,6 @@ int tamaShotCntMAX = 5;
 //プレイヤー
 CHARACTOR player;
 
-//画像を読み込む
-IMAGE TitleLogo; //タイトルロゴ
-IMAGE EnterPush; //エンタープッシュ
-IMAGE SCOLELogo; //スコアロゴ
-
-//背景を読み込む
-IMAGE utyu;	//タイトルの背景
-IMAGE pika;	//スコアの背景
-//BGM
-AUDIO TitleBGM;
-AUDIO PlayBGM;
-AUDIO ENDBGM;
-
-//効果音
-AUDIO Enter;
-
-//エンタープッシュ点滅
-int PushEnterCnt = 0;				//カウンタ
-const int PushEnterCntMAX = 60;		//カウンタMAX値
-BOOL PushEnterBrink = FALSE;		//点滅しているか？
-
-
 //背景画像
 IMAGE back[2];	//背景は２つの画像
 
@@ -327,20 +305,6 @@ int WINAPI WinMain(
 		ScreenFlip();	//ダブルバッファリングした画面を描画
 	}
 
-	//終わるときの処理
-	DeleteGraph(TitleLogo.handle);		//画像メモリから削除
-	DeleteGraph(EnterPush.handle);		//上に同じ
-	DeleteGraph(SCOLELogo.handle);		//上に同じ
-
-	DeleteGraph(utyu.handle);			//上に同じ
-	DeleteGraph(pika.handle);			//上に同じ
-
-	DeleteSoundMem(TitleBGM.handle);	//下に同じ
-	DeleteSoundMem(PlayBGM.handle);		//下に同じ
-	DeleteSoundMem(ENDBGM.handle);		//下に同じ
-
-	DeleteSoundMem(Enter.handle);	//音楽メモリから削除
-
 	//読み込んだ画像を解放
 	for (int i = 0; i < TAMA_DIV_MAX; i++) { DeleteGraph(tama_moto.handle[i]); }
 
@@ -412,13 +376,13 @@ BOOL GameLoad(VOID)
 	player.img.IsDraw = TRUE;	//描画する
 
 	//背景の画像を読み込み①
-	if (LoadImageMem(&back[0], ".\\Image\\hoshi.png") == FALSE) { return FALSE; }
+	if (LoadImageMem(&back[0], ".\\Image\\hoshi.jpg") == FALSE) { return FALSE; }
 	back[0].x = 0;
 	back[0].y = -back[0].height;	//画像の高さ分、位置を上に上げる
 	back[0].IsDraw = TRUE;	//描画する
 
 	//背景の画像を読み込み②
-	if (LoadImageMem(&back[1], ".\\Image\\hoshi_rev.png") == FALSE) { return FALSE; }
+	if (LoadImageMem(&back[1], ".\\Image\\hoshi_rev.jpg") == FALSE) { return FALSE; }
 	back[1].x = 0;
 	back[1].y = 0;
 	back[1].IsDraw = TRUE;	//描画する
@@ -432,22 +396,6 @@ BOOL GameLoad(VOID)
 		CollUpdatePlayer(&teki_moto[i]);	//当たり判定の更新
 		teki_moto[i].img.IsDraw = FALSE;	//描画しません
 	}
-
-	//ロゴを読み込む
-	if (!LoadImageMem(&TitleLogo, ".\\Image\\TitleLogo.png")) { return FALSE; }
-	if (!LoadImageMem(&EnterPush, ".\\Image\\EnterPush.png")) { return FALSE; }
-	if (!LoadImageMem(&SCOLELogo, ".\\Image\\SCOLELogo.png")) { return FALSE; }
-
-	//背景を読み込む
-	if (!LoadImageMem(&utyu, ".\\Image\\utyu.jpg")) { return FALSE; }
-	if (!LoadImageMem(&pika, ".\\Image\\pika.png")) { return FALSE; }
-
-	//音楽を読み込む
-	if (!LoadAudio(&TitleBGM, ".\\Audio\\Title.wav", 255, DX_PLAYTYPE_LOOP)) { return FALSE; }
-	if (!LoadAudio(&PlayBGM, ".\\Audio\\playBGM.mp3", 255, DX_PLAYTYPE_LOOP)) { return FALSE; }
-	if (!LoadAudio(&ENDBGM, ".\\Audio\\END.wav", 255, DX_PLAYTYPE_LOOP)) { return FALSE; }
-
-	if (!LoadAudio(&Enter, ".\\Audio\\Enter.mp3", 255, DX_PLAYTYPE_BACK)) { return FALSE; }
 
 	return TRUE;	//全て読み込みた！
 }
@@ -614,29 +562,6 @@ VOID GameInit(VOID)
 		teki_moto[i].img.IsDraw = FALSE;	//描画しません
 	}
 
-	//タイトルロゴ位置
-	TitleLogo.x = GAME_WIDTH / 2 - TitleLogo.width / 2; //中央揃え
-	TitleLogo.y = 100;
-
-	//PushEnterの位置を決める
-	EnterPush.x = GAME_WIDTH / 2 - EnterPush.width / 2; //中央揃え
-	EnterPush.y = GAME_HEIGHT - EnterPush.height - 100;
-
-	//PushEnterの点滅
-	PushEnterCnt = 0;
-	PushEnterBrink = FALSE;
-
-	//タイトル背景の位置
-	utyu.x = 0;
-	utyu.y = 0;
-
-	//クリアロゴの位置を決める
-	SCOLELogo.x = GAME_WIDTH / 2 - SCOLELogo.width / 2; //中央揃え
-	SCOLELogo.y = 100;
-
-	//スコア背景の位置
-	pika.x = 0;
-	pika.y = 0;
 }
 
 /// <summary>
@@ -671,12 +596,6 @@ VOID TitleProc(VOID)
 
 	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
 	{
-		//BGMを止める
-		StopSoundMem(TitleBGM.handle);
-
-		//効果音を流す
-		PlaySoundMem(Enter.handle, Enter.playType);
-
 		//シーン切り替え
 		//次のシーンの初期化をここで行うと楽
 
@@ -692,13 +611,6 @@ VOID TitleProc(VOID)
 		return;
 	}
 
-	//BGMが流れていないとき
-	if (CheckSoundMem(TitleBGM.handle) == 0)
-	{
-		//BGMを流す
-		PlaySoundMem(TitleBGM.handle, TitleBGM.playType);
-	}
-
 	return;
 }
 
@@ -708,46 +620,7 @@ VOID TitleProc(VOID)
 VOID TitleDraw(VOID)
 {
 
-	//タイトル背景
-	DrawGraph(utyu.x, utyu.y, utyu.handle, TRUE);
 
-	//タイトルロゴ描画
-	DrawGraph(TitleLogo.x, TitleLogo.y, TitleLogo.handle, TRUE);
-
-	//MAX値まで待つ
-	if (PushEnterCnt < PushEnterCntMAX) { PushEnterCnt++; }
-	else
-	{
-		if (PushEnterBrink == TRUE)PushEnterBrink = FALSE;
-		else if (PushEnterBrink == FALSE)PushEnterBrink = TRUE;
-
-		PushEnterCnt = 0;	//カウンタを初期化
-	}
-
-
-	if (PushEnterBrink == TRUE)
-	{
-		//半透明にする
-		SetDrawBlendMode(DX_BLENDMODE_ALPHA, ((float)PushEnterCnt / PushEnterCntMAX) * 255);
-
-		//PushEnterの描画
-		DrawGraph(EnterPush.x, EnterPush.y, EnterPush.handle, TRUE);
-
-		//半透明終了
-		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-	}
-
-	if (PushEnterBrink == FALSE)
-	{
-		//半透明にする
-		SetDrawBlendMode(DX_BLENDMODE_ALPHA, ((float)(PushEnterCntMAX - PushEnterCnt) / PushEnterCntMAX) * 255);
-
-		//PushEnterの描画
-		DrawGraph(EnterPush.x, EnterPush.y, EnterPush.handle, TRUE);
-
-		//半透明終了
-		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-	}
 
 	DrawString(0, 0, "タイトル画面", GetColor(0, 0, 0));
 	return;
@@ -805,10 +678,6 @@ VOID PlayProc(VOID)
 {
 	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
 	{
-		//BGMを止める
-		StopSoundMem(PlayBGM.handle);
-
-
 		//プレイ画面に切り替え
 		ChangeScene(GAME_SCENE_END);
 
@@ -817,14 +686,6 @@ VOID PlayProc(VOID)
 
 		return;
 	}
-
-		//BGMが流れていないとき
-	if (CheckSoundMem(PlayBGM.handle) == 0)
-	{
-		//BGMを流す
-		PlaySoundMem(PlayBGM.handle, PlayBGM.playType);
-	}
-
 
 	/*
 	//プレイヤーを操作する
@@ -868,12 +729,12 @@ VOID PlayProc(VOID)
 	//プレイヤーの当たり判定を更新
 	CollUpdatePlayer(&player);
 
-	/*
 	//スペースキーを押しているとき
+	/*
 	if (KeyDown(KEY_INPUT_SPACE) == TRUE)
 	*/
 
-	//マウスの左ボタンを押しているとき
+	//マウスを左ボタンを押しているとき
 	if (MouseDown(MOUSE_INPUT_LEFT) == TRUE)
 	{
 		if (tamaShotCnt == 0)
@@ -1100,14 +961,14 @@ VOID PlayDraw(VOID)
 		if (teki[i].img.IsDraw == TRUE)
 		{
 			DrawGraph(teki[i].img.x, teki[i].img.y, teki[i].img.handle, TRUE);
-		}
 
-		//当たり判定の描画
-		if (GAME_DEBUG == TRUE)
-		{
-			DrawBox(
-				teki[i].coll.left, teki[i].coll.top, teki[i].coll.right, teki[i].coll.bottom,
-				GetColor(0, 0, 255), FALSE);
+			//当たり判定の描画
+			if (GAME_DEBUG == TRUE)
+			{
+				DrawBox(
+					teki[i].coll.left, teki[i].coll.top, teki[i].coll.right, teki[i].coll.bottom,
+					GetColor(0, 0, 255), FALSE);
+			}
 		}
 
 	}
@@ -1176,20 +1037,10 @@ VOID EndProc(VOID)
 {
 	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
 	{
-		//BGMを止める
-		StopSoundMem(ENDBGM.handle);
-
 		//タイトル画面に切り替え
 		ChangeScene(GAME_SCENE_TITLE);
 
 		return;
-	}
-
-	//BGMが流れていないとき
-	if (CheckSoundMem(ENDBGM.handle) == 0)
-	{
-		//BGMを流す
-		PlaySoundMem(ENDBGM.handle, ENDBGM.playType);
 	}
 
 	return;
@@ -1200,12 +1051,6 @@ VOID EndProc(VOID)
 /// </summary>
 VOID EndDraw(VOID)
 {
-	//スコア背景の描画
-	DrawGraph(pika.x, pika.y, pika.handle, TRUE);
-
-	//スコアロゴの描画
-	DrawGraph(SCOLELogo.x, SCOLELogo.y, SCOLELogo.handle, TRUE);
-
 	DrawString(0, 0, "エンド画面", GetColor(0, 0, 0));
 	return;
 }

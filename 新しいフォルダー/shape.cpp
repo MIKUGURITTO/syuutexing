@@ -1,18 +1,18 @@
+/*--+----1----+----2----+----3----+----4----+----5-----+----6----+----7----+----8----+----9----+---*/
 //Copyright (c) 2020
 //Hamamatsu Mirai Sougou Senmongakkou GameCreate Y.Suzuki
 //All rights reserved.
 
 //図形のソースファイル
 
-
-//ヘッダーファイル読み込み
+//########## ヘッダーファイル読み込み ##########
 #include "game.h"
 #include "shape.h"
 #include "math.h"
 
-//グローバル変数
+//########## グローバル変数 ##########
 
-//関数
+//########## 関数 ##########
 
 /// <summary>
 /// 矩形領域同士の当たり判定をする関数
@@ -49,7 +49,7 @@ BOOL CheckColliPointToRect(iPOINT pt, RECT r)
 	{
 		return TRUE;
 	}
-	return FALSE;
+		return FALSE;
 }
 
 /// <summary>
