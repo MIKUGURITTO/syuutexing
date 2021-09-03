@@ -23,12 +23,16 @@ struct FPS
 	float DrawValue = 0.0f;		//計算結果を描画
 	int SampleRate = GAME_FPS;	//平均を取るサンプル値
 
+	float GameTime = 0.0f;		//ゲーム内時間
+	DATEDATA NowDataTime;		//現在の日付時刻
 };
 
 //グローバル変数の外部参照
 extern FPS fps;	//FPSの管理
 
 //プロトタイプ宣言
-VOID FPSUpdate(VOID);	//FPS値を更新する
-VOID FPSDraw(VOID);		//FPS値を描画
-VOID FPSWait(VOID);		//FPS値を待つ
+extern VOID FPSUpdate(VOID);	//FPS値を更新する
+extern VOID FPSDraw(VOID);		//FPS値を描画
+extern VOID FPSWait(VOID);		//FPS値を待つ
+extern VOID ResetGameTime(VOID);//ゲーム内時間リセット
+extern float GetGameTime(VOID);	//ゲーム内時間を取得

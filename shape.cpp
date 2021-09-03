@@ -1,18 +1,18 @@
+/*--+----1----+----2----+----3----+----4----+----5-----+----6----+----7----+----8----+----9----+---*/
 //Copyright (c) 2020
 //Hamamatsu Mirai Sougou Senmongakkou GameCreate Y.Suzuki
 //All rights reserved.
 
 //図形のソースファイル
 
-
-//ヘッダーファイル読み込み
+//########## ヘッダーファイル読み込み ##########
 #include "game.h"
 #include "shape.h"
 #include "math.h"
 
-//グローバル変数
+//########## グローバル変数 ##########
 
-//関数
+//########## 関数 ##########
 
 /// <summary>
 /// 矩形領域同士の当たり判定をする関数
@@ -49,7 +49,7 @@ BOOL CheckColliPointToRect(iPOINT pt, RECT r)
 	{
 		return TRUE;
 	}
-	return FALSE;
+		return FALSE;
 }
 
 /// <summary>
@@ -101,6 +101,18 @@ BOOL CheckCollMaruToMaru(MARU maru1, MARU maru2)
 }
 
 /// <summary>
+/// iPOINT型を一時的に渡す
+/// </summary>
+/// <param name="x">X位置</param>
+/// <param name="y">Y位置</param>
+/// <returns>iPoint型</returns>
+iPOINT GetiPoint(int x, int y)
+{
+	iPOINT pt = { x,y };
+	return pt;
+}
+
+/// <summary>
 /// RECT型を一時的に渡す
 /// </summary>
 /// <param name="left">左</param>
@@ -111,10 +123,10 @@ BOOL CheckCollMaruToMaru(MARU maru1, MARU maru2)
 RECT GetRect(int left, int top, int right, int bottom)
 {
 	//一時的にRECT型の変数を作って
-	RECT rect = { left ,top ,right ,bottom };
+	RECT coll = { left ,top ,right ,bottom };
 
 	//RECT型を返す
-	return rect;
+	return coll;
 }
 
 /// <summary>

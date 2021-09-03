@@ -155,10 +155,10 @@ VOID MouseDraw(VOID)
 /// <param name="rect">矩形領域</param>
 /// <param name="MOUSE_INPUT_">マウスコード</param>
 /// <returns></returns>
-BOOL MouseRectClick(RECT rect, int MOUSE_INPUT_)
+BOOL MouseRectClick(RECT coll, int MOUSE_INPUT_)
 {
 	//点と四角の当たり判定
-	if (CheckColliPointToRect(mouse.Point, rect) == TRUE)
+	if (CheckColliPointToRect(mouse.Point, coll) == TRUE)
 	{
 		//マウスをクリックしているか？
 		return MouseClick(MOUSE_INPUT_);

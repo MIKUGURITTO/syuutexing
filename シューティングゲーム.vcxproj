@@ -18,12 +18,39 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FPS.cpp" />
+    <ClCompile Include="keyboard.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="mouse.cpp" />
+    <ClCompile Include="shape.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="FPS.h" />
+    <ClInclude Include="game.h" />
+    <ClInclude Include="keyboard.h" />
+    <ClInclude Include="mouse.h" />
+    <ClInclude Include="shape.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Icon\game.ico" />
+    <Image Include="Image\baku1.png" />
+    <Image Include="Image\charachip.png" />
+    <Image Include="Image\player.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="Audio\ブリキのPARADE.mp3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{0fd00250-3472-401c-b703-bbc9790faaef}</ProjectGuid>
     <RootNamespace>シューティングゲーム</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>R03_G2_DxLib_Kouki</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -150,26 +177,6 @@
       <AdditionalLibraryDirectories>C:\DxLib_VC\プロジェクトに追加すべきファイル_VC用;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="FPS.cpp" />
-    <ClCompile Include="keyboard.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="mouse.cpp" />
-    <ClCompile Include="shape.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="game.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="resource.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="FPS.h" />
-    <ClInclude Include="game.h" />
-    <ClInclude Include="keyboard.h" />
-    <ClInclude Include="mouse.h" />
-    <ClInclude Include="shape.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

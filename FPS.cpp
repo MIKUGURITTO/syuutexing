@@ -19,18 +19,22 @@ VOID FPSUpdate(VOID)
 	{
 		//測定開始時刻をマイクロ秒単位で取得
 		fps.StartTime = GetNowHiPerformanceCount();	//Windowsが起動してから経過した時間(マイクロ秒)
-
-		fps.IsInitFlg = TRUE;	//フラグを立てる
 	}
 
 	//現在の時刻をマイクロ秒単位で取得
 	fps.NowTime = GetNowHiPerformanceCount();
+
+	//一番最初だけ
+	if (FALSE == fps.IsInitFlg) { fps.OldTime = fps.NowTime; }	//以前の時間 = 現在の時間
 
 	//前回取得した時間からの経過時間を秒(小数)に変換してからセット
 	fps.DeltaTime = (fps.NowTime - fps.OldTime) / 1000000.0f;
 
 	//今回取得した時間を保存
 	fps.OldTime = fps.NowTime;
+
+	//一番最初だけフラグON
+	if (FALSE == fps.IsInitFlg) { fps.IsInitFlg = TRUE; }
 
 	//１フレーム目～FPS設定値までは、カウントアップ
 	if (fps.Count < fps.SampleRate)
@@ -52,6 +56,12 @@ VOID FPSUpdate(VOID)
 		//カウンタ初期化
 		fps.Count = 1;
 	}
+
+	//ゲーム内時間カウントアップ
+	fps.GameTime += fps.DeltaTime;
+
+	//現在日付時刻を取得
+	GetDateTime(&fps.NowDataTime);
 
 	return;
 }
@@ -118,4 +128,22 @@ VOID FPSWait(VOID)
 	}
 
 	return;
+}
+
+/// <summary>
+/// ゲーム内時間のリセット
+/// </summary>
+VOID ResetGameTime(VOID)
+{
+	fps.GameTime = 0;
+
+	return;
+}
+
+/// <summary>
+/// ゲーム内時間を取得
+/// </summary>
+float GetGameTime(VOID)
+{
+	return fps.GameTime;
 }
