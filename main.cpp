@@ -4,6 +4,7 @@
 #include "FPS.h"		//FPSの処理
 #include "mouse.h"		//マウスの処理
 #include "shape.h"		//図形の処理
+#include "Font.h"		//フォントの処理
 
 //独自のマクロ定義
 
@@ -97,6 +98,7 @@ DIVIMAGE samplePlayerImg;
 MUKI muki = muki_shita;		//サンプル向き
 
 AUDIO sampleBGM;
+AUDIO playBGM;
 
 // プログラムは WinMain から始まります
 int WINAPI WinMain(
@@ -128,6 +130,9 @@ int WINAPI WinMain(
 
 	//最初のシーンは、タイトル画面から
 	GameScene = GAME_SCENE_TITLE;
+
+	//フォント追加
+	if (FontAdd() == FALSE) { return FALSE; }
 
 	//ゲーム読み込み
 	if (!GameLoad())
@@ -207,6 +212,9 @@ int WINAPI WinMain(
 		ScreenFlip();	//ダブルバッファリングした画面を描画
 	}
 
+	//フォント削除
+	FontRemove();
+
 	//データ削除
 	GameDelete();
 
@@ -229,10 +237,16 @@ BOOL GameLoad(VOID)
 	if (LoadImageDivMem(&sampleDivImg, ".\\Image\\baku1.png", 8, 2) == FALSE) { return FALSE; }
 
 	//サンプル分割画像を読み込み
-	if (LoadImageDivMem(&samplePlayerImg, ".\\Image\\charachip.png", 3, 4) == FALSE) { return FALSE; }
+	if (LoadImageDivMem(&samplePlayerImg, ".\\Image\\charachip_huran.png", 3, 4) == FALSE) { return FALSE; }
 
 	//サンプルBGMを読み込み
 	if (LoadAudio(&sampleBGM, ".\\Audio\\ブリキのPARADE.mp3", 128, DX_PLAYTYPE_LOOP) == FALSE) { return FALSE; }
+
+	//プレイ画面BGMを読み込み
+	if (LoadAudio(&playBGM, ".\\Audio\\playBGM.mp3", 128, DX_PLAYTYPE_LOOP) == FALSE) { return FALSE; }
+
+	//フォントハンドルを作成
+	if (FontCreate() == FALSE) { return FALSE; }
 
 	return TRUE;	//全て読み込みた！
 }
@@ -253,6 +267,12 @@ VOID GameDelete(VOID)
 
 	//サンプル音楽を削除
 	DeleteMusicMem(sampleBGM.handle);
+
+	//プレイ画面BGMを削除
+	DeleteMusicMem(playBGM.handle);
+
+	//フォントデータ削除
+	FontDelete();
 
 	return;
 }
@@ -304,6 +324,9 @@ VOID TitleProc(VOID)
 		//シーン切り替え
 		//次のシーンの初期化をここで行うと楽
 
+		//音楽を止める
+		StopAudio(&sampleBGM);
+
 		//ゲームの初期化
 		GameInit();
 
@@ -318,10 +341,24 @@ VOID TitleProc(VOID)
 	//プレイヤーの動作サンプル
 	{
 		muki = muki_none;	//最初は向きを無しにする
-		if (KeyDown(KEY_INPUT_W)) { muki = muki_ue; samplePlayerImg.y--; }
-		else if (KeyDown(KEY_INPUT_S)) { muki = muki_shita; samplePlayerImg.y++; }
-		if (KeyDown(KEY_INPUT_A)) { muki = muki_hidari; samplePlayerImg.x--; }
-		else if (KeyDown(KEY_INPUT_D)) { muki = muki_migi; samplePlayerImg.x++; }
+
+		if (KeyDown(KEY_INPUT_W)) 
+		{ 
+			muki = muki_ue; samplePlayerImg.y--; 
+		}
+		else if (KeyDown(KEY_INPUT_S)) 
+		{ 
+			muki = muki_shita; samplePlayerImg.y++; 
+		}
+		if (KeyDown(KEY_INPUT_A)) 
+		{ 
+			muki = muki_hidari; samplePlayerImg.x--; 
+		}
+		else if (KeyDown(KEY_INPUT_D)) 
+		{ 
+			muki = muki_migi; samplePlayerImg.x++; 
+		}
+		
 		CollUpdateDivImage(&samplePlayerImg);	//当たり判定の更新
 	}
 
@@ -345,10 +382,25 @@ VOID TitleDraw(VOID)
 	//ゲーム内時間
 	DrawFormatString(500, 50, GetColor(0, 0, 0), "TIME:%3.2f", GetGameTime());
 
+	//制限時間を表示
+	DrawFormatString(500, 90, GetColor(0, 0, 0), "残り:%3.2f", 30.0f - GetGameTime());
+
 	//現在の日付と時刻
 	DrawFormatString(500, 70, GetColor(0, 0, 0), "DATE:%4d/%2d/%2d %2d:%2d:%2d", fps.NowDataTime.Year, fps.NowDataTime.Mon, fps.NowDataTime.Day, fps.NowDataTime.Hour, fps.NowDataTime.Min, fps.NowDataTime.Sec);
 
 	DrawString(0, 0, "タイトル画面", GetColor(0, 0, 0));
+	
+	//フォントのサンプル
+	DrawStringToHandle(100, 100, "シンデレラフォント", GetColor(0, 0, 0), sampleFont1.handle);
+
+	//数値を出したとき
+	DrawFormatStringToHandle(200, 200, GetColor(0, 0, 0), sampleFont2.handle, "残り:%3.2f", 30.0f - GetGameTime());
+
+	//フォントのサンプル
+	DrawStringToHandle(600, 100, CinderellaFont.Name, GetColor(0, 0, 0), CinderellaFont.handle);
+
+	DrawString(0, 0, "タイトル画面", GetColor(0, 0, 0));
+
 	return;
 }
 
@@ -370,10 +422,15 @@ VOID PlayProc(VOID)
 {
 	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
 	{
+		//音楽を止める
+		StopAudio(&playBGM);
+
 		//プレイ画面に切り替え
 		ChangeScene(GAME_SCENE_END);
 		return;
 	}
+
+	PlayAudio(playBGM);	//BGMを鳴らす
 
 	return;
 }
