@@ -5,6 +5,7 @@
 #include "mouse.h"		//マウスの処理
 #include "shape.h"		//図形の処理
 #include "Font.h"		//フォントの処理
+#include "Data.h"		//データの処理
 
 //独自のマクロ定義
 
@@ -248,6 +249,9 @@ BOOL GameLoad(VOID)
 	//フォントハンドルを作成
 	if (FontCreate() == FALSE) { return FALSE; }
 
+	//サンプル敵データ読み込み
+	if (LoadCSVChara(CSV_PATH_ENEMY, &enemy[0], ENEMY_MAX, TRUE) == FALSE) { return FALSE; }
+
 	return TRUE;	//全て読み込みた！
 }
 
@@ -398,6 +402,12 @@ VOID TitleDraw(VOID)
 
 	//フォントのサンプル
 	DrawStringToHandle(600, 100, CinderellaFont.Name, GetColor(0, 0, 0), CinderellaFont.handle);
+
+	//読み込んだデータを描画
+	for (int i = 0; i < ENEMY_MAX; i++)
+	{
+		DrawFormatString(300, 300 + i * 20, GetColor(0, 0, 0), "%s", enemy[i].Name);
+	}
 
 	DrawString(0, 0, "タイトル画面", GetColor(0, 0, 0));
 

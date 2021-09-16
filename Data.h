@@ -9,10 +9,11 @@
 //マイクロ定義##################################################
 
 //エラーメッセージ
-#define CSV_LOAD_EAR_TITLE	TEXT("CSV読み込みエラー")
+#define CSV_LOAD_ERR_TITLE		TEXT("CSV読み込みエラー")
+#define CSV_DATANUM_ERR_TITLE	TEXT("CSV読み込みエラー")
 
 //キャラデータのパス
-#define CSV_PATH_ENEMY		TEXT(".Data\\enemy.csv")	//ANSIの文字コードでファイル保存
+#define CSV_PATH_ENEMY		TEXT(".\\Data\\enemy.csv")	//ANSIの文字コードでファイル保存
 
 //データの書式指定子
 //キャラクタの書式指定子 (%[^,]は文字列）
@@ -44,4 +45,4 @@ extern CHARA_DATA enemy[ENEMY_MAX];		//敵データ
 //プロトタイプ宣言##############################################
 //※externは、外部に関数がありますよ！という目印をつけています。
 
-extern BOOL LoadSVChara(const char* path, CHARA_DATA* chara, int DataMax, BOOL IsHeader);
+extern BOOL LoadCSVChara(const char* path, CHARA_DATA* chara, int DataMax, BOOL IsHeader);
