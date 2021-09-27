@@ -252,6 +252,9 @@ BOOL GameLoad(VOID)
 	//サンプル敵データ読み込み
 	if (LoadCSVChara(CSV_PATH_ENEMY, &enemy[0], ENEMY_MAX, TRUE) == FALSE) { return FALSE; }
 
+	//サンプルスコアデータを読み込み
+	if (LoadScoreData(SCORE_DATA_PATH, &score_data, TRUE) == FALSE) { return FALSE; }
+
 	return TRUE;	//全て読み込みた！
 }
 
@@ -323,21 +326,22 @@ VOID Title(VOID)
 /// </summary>
 VOID TitleProc(VOID)
 {
-	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
+	//セーブデータ系サンプル
 	{
-		//シーン切り替え
-		//次のシーンの初期化をここで行うと楽
+		//セーブデータ削除サンプル
+		if (KeyDown(KEY_INPUT_Q)) { DeleteScoreData(); }
 
-		//音楽を止める
-		StopAudio(&sampleBGM);
+		//セーブデータ保存サンプル
+		if (KeyDown(KEY_INPUT_E))
+		{
+			//スコアデータを適当に設定
+			score_data.Score1 = (int)GetGameTime();
 
-		//ゲームの初期化
-		GameInit();
+			//スコアデータの並び返しながら・・・
 
-		//プレイ画面に切り替え
-		ChangeScene(GAME_SCENE_PLAY);
-
-		return;
+			//スコアデータ保存
+			SaveScoreData();
+		}
 	}
 
 	PlayAudio(sampleBGM);	//BGMを鳴らす
