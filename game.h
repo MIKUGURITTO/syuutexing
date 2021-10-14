@@ -18,7 +18,7 @@
 
 #define GAME_WINDOW_BAR	0				//ウィンドウバーの種類
 
-#define GAME_DEBUG	TRUE				//デバッグモード
+#define GAME_DEBUG	FALSE				//デバッグモード
 
 #define PATH_MAX	255					//パスの長さ
 #define STR_MAX		255					//文字の長さ
@@ -69,7 +69,7 @@ struct DIVIMAGE
 	BOOL IsDraw = FALSE;			//描画できるか？
 
 	int AnimCnt = 0;				//アニメーションカウンタ
-	int AnimCntMAX = 2;				//アニメーションカウンタMAX
+	int AnimCntMAX = 10;				//アニメーションカウンタMAX
 	BOOL IsAnimLoop = FALSE;		//アニメーションをループさせるか？
 };
 

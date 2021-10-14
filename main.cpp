@@ -75,9 +75,12 @@ VOID ChangeScene(GAME_SCENE scene);		//シーン切り替え
 BOOL OnCollRect(RECT a, RECT b);		//矩形と矩形の当たり判定
 VOID CollUpdateImage(IMAGE* img);		//画像の当たり判定の更新
 VOID CollUpdateDivImage(DIVIMAGE* div);	//分割画像の当たり判定の更新
-BOOL LoadImageMem(IMAGE* image, const char* path);										//ゲームの画像を読み込み
-BOOL LoadAudio(AUDIO* audio, const char* path, int Volume, int playType);				//ゲームの音楽を読み込み
-BOOL LoadImageDivMem(DIVIMAGE* div, const char* path, int bunkatuYoko, int bunkatuTate);//ゲームの画像の分割読み込み
+BOOL LoadImageMem(IMAGE* image, const char* path);
+										//ゲームの画像を読み込み
+BOOL LoadAudio(AUDIO* audio, const char* path, int Volume, int playType);
+													//ゲームの音楽を読み込み
+BOOL LoadImageDivMem(DIVIMAGE* div, const char* path, int bunkatuYoko, int bunkatuTate);
+															//ゲームの画像の分割読み込み
 
 VOID PlayAudio(AUDIO audio);					//音楽再生
 int GetVolumeAudio(AUDIO audio);				//音楽のボリューム取得
@@ -100,6 +103,10 @@ MUKI muki = muki_shita;		//サンプル向き
 
 AUDIO sampleBGM;
 AUDIO playBGM;
+
+MAP_DATA map1;				//マップ１
+
+RECT event;	//イベントが起こるマス
 
 // プログラムは WinMain から始まります
 int WINAPI WinMain(
@@ -240,6 +247,7 @@ BOOL GameLoad(VOID)
 	//サンプル分割画像を読み込み
 	if (LoadImageDivMem(&samplePlayerImg, ".\\Image\\charachip_huran.png", 3, 4) == FALSE) { return FALSE; }
 
+	//★音楽変えたい
 	//サンプルBGMを読み込み
 	if (LoadAudio(&sampleBGM, ".\\Audio\\ブリキのPARADE.mp3", 128, DX_PLAYTYPE_LOOP) == FALSE) { return FALSE; }
 
@@ -251,9 +259,23 @@ BOOL GameLoad(VOID)
 
 	//サンプル敵データ読み込み
 	if (LoadCSVChara(CSV_PATH_ENEMY, &enemy[0], ENEMY_MAX, TRUE) == FALSE) { return FALSE; }
-
+	
 	//サンプルスコアデータを読み込み
 	if (LoadScoreData(SCORE_DATA_PATH, &score_data, TRUE) == FALSE) { return FALSE; }
+
+	//サンプルマップデータを読み込み
+	if (LoadCSVMap(
+		IMG_PATH_MAP1,
+		CSV_PATH_MAP1_SHITA,
+		CSV_PATH_MAP1_NAKA,
+		CSV_PATH_MAP1_NAKA_ATARI,
+		CSV_PATH_MAP1_UE,
+		&map1,
+		MAP1_YOKO_DIV, MAP1_TATE_DIV
+	) == FALSE) {
+		return FALSE;
+	}
+
 
 	return TRUE;	//全て読み込みた！
 }
@@ -293,6 +315,12 @@ VOID GameInit(VOID)
 
 	//ゲーム内時間リセット
 	ResetGameTime();
+
+	//イベントが起こるマス
+	event.top = map1.height * (10) + 1;
+	event.left = map1.width * (1) + 1;
+	event.bottom = map1.height * (10 + 1) - 1;
+	event.right = map1.width * (1 + 1) - 1;
 
 	return;
 }
@@ -336,6 +364,7 @@ VOID TitleProc(VOID)
 		{
 			//スコアデータを適当に設定
 			score_data.Score1 = (int)GetGameTime();
+			strcpyDx(score_data.Name1, "Taro");
 
 			//スコアデータの並び返しながら・・・
 
@@ -344,8 +373,23 @@ VOID TitleProc(VOID)
 		}
 	}
 
+	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
+	{
+		//シーン切り替え
+		//次のシーンの初期化をここで行うと楽になる
+
+		//ゲームの初期化
+		GameInit();
+
+		//BGMを止める
+		StopAudio(&sampleBGM);
+
+		return;
+	}
+
 	PlayAudio(sampleBGM);	//BGMを鳴らす
 
+	/*
 	//プレイヤーの動作サンプル
 	{
 		muki = muki_none;	//最初は向きを無しにする
@@ -369,9 +413,43 @@ VOID TitleProc(VOID)
 		
 		CollUpdateDivImage(&samplePlayerImg);	//当たり判定の更新
 	}
+	*/
 
+	//マップの当たり判定を考慮
+	{
+		muki = muki_none;	//最初は向きをなしにする
+		DIVIMAGE dummy = samplePlayerImg;	//当たり判定のダミーを作っておく
+
+		if (KeyDown(KEY_INPUT_W))			{ muki = muki_ue; dummy.y--; }
+		else if (KeyDown(KEY_INPUT_S))		{ muki = muki_shita; dummy.y++; }
+		if (KeyDown(KEY_INPUT_A))			{ muki = muki_hidari; dummy.x--; }
+		else if (KeyDown(KEY_INPUT_D))		{ muki = muki_migi; dummy.x++; }
+
+		CollUpdateDivImage(&dummy);	//当たり判定の更新
+
+		if (CollMap(dummy.coll, map1) == FALSE)
+		{
+			samplePlayerImg = dummy;	//ダミー情報を戻す
+		}
+
+		//イベントのマスとプレイヤーがあたっているか
+		if (CheckCollRectToRect(samplePlayerImg.coll, event) == TRUE)
+		{
+			//ゲームの初期化
+			GameInit();
+
+			//BGMを止める
+			StopAudio(&sampleBGM);
+
+			//プレイ画面に切り替え
+			ChangeScene(GAME_SCENE_PLAY);
+		}
+	}
+	
 	return;
 }
+
+int size = 0;
 
 /// <summary>
 /// タイトル画面の描画
@@ -388,15 +466,16 @@ VOID TitleDraw(VOID)
 	}
 
 	//ゲーム内時間
-	DrawFormatString(500, 50, GetColor(0, 0, 0), "TIME:%3.2f", GetGameTime());
+	DrawFormatString(500, 310, GetColor(0, 0, 0), "TIME:%3.2f", GetGameTime());
+
+	//ゲーム内時間
+	DrawFormatString(500, 300, GetColor(255, 0, 0), "TIME:%3.2f", GetGameTime());
 
 	//制限時間を表示
 	DrawFormatString(500, 90, GetColor(0, 0, 0), "残り:%3.2f", 30.0f - GetGameTime());
 
 	//現在の日付と時刻
 	DrawFormatString(500, 70, GetColor(0, 0, 0), "DATE:%4d/%2d/%2d %2d:%2d:%2d", fps.NowDataTime.Year, fps.NowDataTime.Mon, fps.NowDataTime.Day, fps.NowDataTime.Hour, fps.NowDataTime.Min, fps.NowDataTime.Sec);
-
-	DrawString(0, 0, "タイトル画面", GetColor(0, 0, 0));
 	
 	//フォントのサンプル
 	DrawStringToHandle(100, 100, "シンデレラフォント", GetColor(0, 0, 0), sampleFont1.handle);
@@ -412,6 +491,12 @@ VOID TitleDraw(VOID)
 	{
 		DrawFormatString(300, 300 + i * 20, GetColor(0, 0, 0), "%s", enemy[i].Name);
 	}
+
+	//マップのサンプル
+	DrawMap(map1);
+
+	//イベントが起こるマス
+	DrawRect(event, GetColor(0, 255, 0), TRUE);
 
 	DrawString(0, 0, "タイトル画面", GetColor(0, 0, 0));
 
@@ -620,10 +705,10 @@ VOID CollUpdateImage(IMAGE* img)
 /// <param name="img">画像構造体のポインタ</param>
 VOID CollUpdateDivImage(DIVIMAGE* div)
 {
-	div->coll.left = div->x;
-	div->coll.top = div->y;
+	div->coll.left = div->x +15;
+	div->coll.top = div->y+20;
 
-	div->coll.right = div->x + div->width;
+	div->coll.right = div->x + div->width-10;
 	div->coll.bottom = div->y + div->height;
 
 	return;

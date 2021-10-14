@@ -9,7 +9,8 @@
 CHARA_DATA enemy[ENEMY_MAX];	//敵データ
 
 SCORE_DATA score_data;			//スコアデータ
-SCORE_DATA score_dataInit = { SCORE_DATA_PATH,"NAME1",-1,"NAME2",-1, "NAME3",-1 };	//スコアデータ(初期化用)
+SCORE_DATA score_dataInit = { SCORE_DATA_PATH,"NAME1",-1,"NAME2",-1, "NAME3",-1 };
+//スコアデータ(初期化用)
 
 //関数##########################################################
 
@@ -56,7 +57,8 @@ BOOL LoadCSVChara(const char* path, CHARA_DATA* chara, int DataMax, BOOL IsHeade
 			fp,
 			CSV_CHARA_FORMAT,	//データが「一行=レコード」で書かれているのがポイント！
 			&(chara + LoopCnt)->No,
-			&(chara + LoopCnt)->Name[0], STR_MAX,	//文字列を読み込むときは、次の引数で文字列最大数を指定する
+			&(chara + LoopCnt)->Name[0], STR_MAX,
+			//文字列を読み込むときは、次の引数で文字列最大数を指定する
 			&(chara + LoopCnt)->HP,
 			&(chara + LoopCnt)->ATK,
 			&(chara + LoopCnt)->DEF,
@@ -72,7 +74,8 @@ BOOL LoadCSVChara(const char* path, CHARA_DATA* chara, int DataMax, BOOL IsHeade
 	//データの数が違うとき
 	if (LoopCnt - 1 != DataMax)
 	{
-		MessageBox(GetMainWindowHandle(), path, CSV_DATANUM_ERR_TITLE, MB_OK);	//読み込みエラー
+		MessageBox(GetMainWindowHandle(), path, CSV_DATANUM_ERR_TITLE, MB_OK);
+		//読み込みエラー
 		return FALSE;
 	}
 
@@ -109,7 +112,8 @@ BOOL LoadScoreData(const char* path, SCORE_DATA* score, BOOL IsHeader = FALSE)
 		FileErr = fopen_s(&fp, path, "r");	//ファイルを読み込みモード（r）で開く
 		if (FileErr != NULL)
 		{
-			MessageBox(GetMainWindowHandle(), path, SCORE_LOAD_ERR_TITLE, MB_OK);	//読み込みエラー
+			MessageBox(GetMainWindowHandle(), path, SCORE_LOAD_ERR_TITLE, MB_OK);
+		//読み込みエラー
 			return FALSE;
 		}
 	}
@@ -153,7 +157,8 @@ BOOL CreateScoreData(VOID)
 	//なかったらスコアデータを作る
 	FILE* creFp;
 	errno_t creFileErr = NULL;	//ファイル読み込みエラーを確認
-	creFileErr = fopen_s(&creFp, GetScoreDataPath(), "w");	//ファイルを書き込みモード（ｗ）で開く（作成する）
+	creFileErr = fopen_s(&creFp, GetScoreDataPath(), "w");
+	//ファイルを書き込みモード（ｗ）で開く（作成する）
 
 	if (creFileErr != NULL)
 	{
@@ -252,5 +257,317 @@ const char* GetScoreDataPath(VOID)
 VOID SetScoreDataPath(const char* path)
 {
 	strcpyDx(score_data.path, path);
+	return;
+}
+
+/// <summary>
+/// CSVファイルを読み込む（MAP_DATA）
+/// </summary>
+/// <param name="ImgPath">マップチップの画像ファイルのパス</pram>
+/// <param name="ShitaPath">下ファイルのパス</pram>
+/// <param name="Nacarat">中ファイルのパス</pram>
+/// <param name="NakaAtariPath">中当たりファイルのパス</pram>
+/// <param name="UePath">上ファイルのパス</pram>
+/// <param name="map">マップデータ構造体の先頭アドレス</pram>
+/// <param name="divYoko">横の分割数</pram>
+/// <param name="divTate">縦の分割数</pram>
+/// <returns>TRUEは読み込めた/FALSEは失敗した</returns>
+BOOL LoadCSVMap(const char* ImgPath, const char* ShitaPath, const char* NakaPath, const char* NakaAtariPath, const char* UePath, MAP_DATA* map, int divYoko, int divTate)
+{
+	//マップチップを読み込み
+	{
+		int IsLoad = -1;		//画像が読み込みたか？
+
+		//一時的に画像のハンドルを用意する
+		int TempHandle = LoadGraph(ImgPath);
+
+		//読み込みエラー
+		if (TempHandle == -1)
+		{
+			MessageBox(
+				GetMainWindowHandle(),	//ウィンドウハンドル
+				ImgPath,					//本文
+				"画像読み込みエラー",	//タイトル
+				MB_OK						//ボタン
+			);
+
+			return FALSE;	//読み込み失敗
+		}
+
+		//画像の幅と高さを取得
+		int Width = -1;			//幅
+		int Height = -1;		//高さ
+		GetGraphSize(TempHandle, &Width, &Height);
+
+		//分割して読み込み
+		IsLoad = LoadDivGraph(
+			ImgPath,							//画像のパス
+			divYoko * divTate,					//分割総数
+			divYoko, divTate,					//横の分割、縦の分割
+			Width / divYoko, Height / divTate,	//画像１つ分の幅、高さ
+			map->handle							//連続で管理する配列の先頭アドレス
+		);
+
+		//分割エラー
+		if (IsLoad == -1)
+		{
+			MessageBox(
+				GetMainWindowHandle(),	//ウィンドウハンドル
+				ImgPath,				//本文
+				"画像分割エラー",	//タイトル
+				MB_OK					//ボタン
+			);
+
+			return FALSE;	//読み込み失敗
+		}
+		//情報を設定
+		map->DivMax = divYoko * divTate;
+		GetGraphSize(map->handle[0], &map->width, &map->height);
+
+		//画像を描画する
+		map->IsDraw = TRUE;
+
+		//一時的に読み込んだハンドルを解散
+		DeleteGraph(TempHandle);
+	}
+
+	FILE* fp;				//ファイルポインタ
+	char GetChar = '\0';	//取得する文字
+	int LoopCnt = 0;		//ループカウンタ
+	errno_t FileErr = NULL;//ファイル読み込みエラーを確認
+	int IsEOF = NULL;		//ファイルの終わりかチェック
+
+	//下CSVを読みとり
+	{
+		FileErr = fopen_s(&fp, ShitaPath, "r");	//ファイルを読み込みモード（ｒ）で開く
+		if (FileErr != NULL)
+		{
+			MessageBox(GetMainWindowHandle(), ShitaPath, CSV_LOAD_ERR_TITLE, MB_OK);	//読み込みエラー
+		}
+
+		//ここから正常に読み込めたときの処理******************************************
+
+		//実際にデータを格納する
+		IsEOF = NULL; LoopCnt = 0;
+		while (IsEOF != EOF)	//End Of File (ファイルの最後)ではないとき繰り返す
+		{
+			//ファイルから数値を一つ読み込み（%d,）、配列に格納する
+			//[LoopCnt / MAP_YOKO_MAX] [LoopCnt % MAP_YOKO_MAX]は、
+			//例えば[3][3]の配列のとき、LoopCntが5であれば、
+			//[5 / 3 = 1][5 % 3 = 2]となり、１次元配列を２次元配列として変換できる
+			IsEOF = fscanf_s(
+				fp,
+				CSV_MAP_FORMAT, //データが「XX,」で書かれているのがポイント！
+				&map->CSV_shita[LoopCnt / MAP1_YOKO_MAX][LoopCnt % MAP1_YOKO_MAX]
+			);
+
+			//次のデータへ
+			LoopCnt++;
+		}
+
+		fclose(fp);	//ファイルを閉じる
+	}
+
+	//中CSVを読み取り
+	{
+		FileErr = fopen_s(&fp, NakaPath, "r");	//ファイルを読み込みモード（ｒ）で開く
+		if (FileErr != NULL)
+		{
+			MessageBox(GetMainWindowHandle(), NakaPath, CSV_LOAD_ERR_TITLE, MB_OK);	//読み込みエラー
+		}
+
+		//ここから正常に読み込めたときの処理******************************************
+
+		//実際にデータを格納する
+		IsEOF = NULL; LoopCnt = 0;
+		while (IsEOF != EOF)	//End Of File (ファイルの最後)ではないとき繰り返す
+		{
+			//ファイルから数値を一つ読み込み（%d,）、配列に格納する
+			//[LoopCnt / MAP_YOKO_MAX] [LoopCnt % MAP_YOKO_MAX]は、
+			//例えば[3][3]の配列のとき、LoopCntが5であれば、
+			//[5 / 3 = 1][5 % 3 = 2]となり、１次元配列を２次元配列として変換できる
+			IsEOF = fscanf_s(
+				fp,
+				CSV_MAP_FORMAT, //データが「XX,」で書かれているのがポイント！
+				&map->CSV_naka[LoopCnt / MAP1_YOKO_MAX][LoopCnt % MAP1_YOKO_MAX]
+			);
+
+			//次のデータへ
+			LoopCnt++;
+		}
+
+		fclose(fp);	//ファイルを閉じる
+	}
+
+	//中当たりCSVを読み取り
+	{
+		FileErr = fopen_s(&fp, NakaAtariPath, "r");	//ファイルを読み込みモード（ｒ）で開く
+		if (FileErr != NULL)
+		{
+			MessageBox(GetMainWindowHandle(), NakaAtariPath, CSV_LOAD_ERR_TITLE, MB_OK);	//読み込みエラー
+		}
+
+		//ここから正常に読み込めたときの処理******************************************
+
+		//実際にデータを格納する
+		IsEOF = NULL; LoopCnt = 0;
+		while (IsEOF != EOF)	//End Of File (ファイルの最後)ではないとき繰り返す
+		{
+			//ファイルから数値を一つ読み込み（%d,）、配列に格納する
+			//[LoopCnt / MAP_YOKO_MAX] [LoopCnt % MAP_YOKO_MAX]は、
+			//例えば[3][3]の配列のとき、LoopCntが5であれば、
+			//[5 / 3 = 1][5 % 3 = 2]となり、１次元配列を２次元配列として変換できる
+			IsEOF = fscanf_s(
+				fp,
+				CSV_MAP_FORMAT, //データが「XX,」で書かれているのがポイント！
+				&map->CSV_naka_atari[LoopCnt / MAP1_YOKO_MAX][LoopCnt % MAP1_YOKO_MAX]
+			);
+
+			//次のデータへ
+			LoopCnt++;
+		}
+
+		fclose(fp);	//ファイルを閉じる
+	}
+
+	//上CSVを読み取り
+	{
+		FileErr = fopen_s(&fp, UePath, "r");	//ファイルを読み込みモード（ｒ）で開く
+		if (FileErr != NULL)
+		{
+			MessageBox(GetMainWindowHandle(), UePath, CSV_LOAD_ERR_TITLE, MB_OK);	//読み込みエラー
+		}
+
+		//ここから正常に読み込めたときの処理******************************************
+
+		//実際にデータを格納する
+		IsEOF = NULL; LoopCnt = 0;
+		while (IsEOF != EOF)	//End Of File (ファイルの最後)ではないとき繰り返す
+		{
+			//ファイルから数値を一つ読み込み（%d,）、配列に格納する
+			//[LoopCnt / MAP_YOKO_MAX] [LoopCnt % MAP_YOKO_MAX]は、
+			//例えば[3][3]の配列のとき、LoopCntが5であれば、
+			//[5 / 3 = 1][5 % 3 = 2]となり、１次元配列を２次元配列として変換できる
+			IsEOF = fscanf_s(
+				fp,
+				CSV_MAP_FORMAT, //データが「XX,」で書かれているのがポイント！
+				&map->CSV_ue[LoopCnt / MAP1_YOKO_MAX][LoopCnt % MAP1_YOKO_MAX]
+			);
+
+			//次のデータへ
+			LoopCnt++;
+		}
+
+		fclose(fp);	//ファイルを閉じる
+	}
+
+	//マップの当たり判定を作成
+	{
+		for (int tate = 0; tate < MAP1_TATE_MAX; tate++)
+		{
+			for (int yoko = 0; yoko < MAP1_YOKO_MAX; yoko++)
+			{
+				//通れないIDであれば
+				if (map->CSV_naka_atari[tate][yoko] == MAP1_STOP_ID)
+				{
+					//当たり判定を作成
+					map->coll[tate][yoko].left = (yoko + 0) * map->width + 1;
+					map->coll[tate][yoko].right = (yoko + 1) * map->width - 1;
+					map->coll[tate][yoko].top = (tate + 0) * map->height + 1;
+					map->coll[tate][yoko].bottom = (tate + 1) * map->height - 1;
+				}
+				else
+				{
+					map->coll[tate][yoko].left = 0;
+					map->coll[tate][yoko].right = 0;
+					map->coll[tate][yoko].top = 0;
+					map->coll[tate][yoko].bottom = 0;
+				}
+
+				//マップの場所を設定
+				map->x[tate][yoko] = (yoko + 0) * map->width;
+				map->y[tate][yoko] = (tate + 0) * map->height;
+			}
+		}
+	}
+
+	return TRUE;
+}
+///<summary>
+///マップ当たり判定
+///</summary>
+///<param name="rect"></param>
+///<param name="map"></param>
+///<returns></returns>
+BOOL CollMap(RECT rect, MAP_DATA map)
+{
+	//当たり判定チェック
+	for (int tate = 0; tate < MAP1_TATE_MAX; tate++)
+	{
+		for (int yoko = 0; yoko < MAP1_YOKO_MAX; yoko++)
+		{
+			if (CheckCollRectToRect(rect, map.coll[tate][yoko]) == TRUE)
+			{
+				return TRUE;
+			}
+		}
+	}
+
+	return FALSE;
+}
+	
+///<summary>
+///マップ描画
+///</summary>
+///<param name="map">マップ構造体</param>
+///<returns></returns>
+///<returns></returns>
+VOID DrawMap(MAP_DATA map)
+{
+	//画像が描画できるときは
+	if (map.IsDraw == TRUE)
+	{
+
+
+		for (int tate = 0; tate < MAP1_TATE_MAX; tate++)
+		{
+			for (int yoko = 0; yoko < MAP1_YOKO_MAX; yoko++)
+			{
+				DrawGraph(map.x[tate][yoko], map.y[tate][yoko], map.handle[map.CSV_shita[tate][yoko]], TRUE);	//下レイヤ
+			}
+		}
+
+		for (int tate = 0; tate < MAP1_TATE_MAX; tate++)
+		{
+			for (int yoko = 0; yoko < MAP1_YOKO_MAX; yoko++)
+			{
+				DrawGraph(map.x[tate][yoko], map.y[tate][yoko], map.handle[map.CSV_naka[tate][yoko]], TRUE);	//中レイヤ
+			}
+		}
+
+		//ここにプレイヤーの画像を描画する
+		DrawDivImageChara(&samplePlayerImg);//サンプル分割画像
+
+		for (int tate = 0; tate < MAP1_TATE_MAX; tate++)
+		{
+			for (int yoko = 0; yoko < MAP1_YOKO_MAX; yoko++)
+			{
+				DrawGraph(map.x[tate][yoko], map.y[tate][yoko], map.handle[map.CSV_ue[tate][yoko]], TRUE);	//上レイヤ
+			}
+		}
+	}
+
+	//デバックモードのときは
+	if (GAME_DEBUG == TRUE)
+	{
+		for (int tate = 0; tate < MAP1_TATE_MAX; tate++)
+		{
+			for (int yoko = 0; yoko < MAP1_YOKO_MAX; yoko++)
+			{
+				//当たり判定を描画
+				DrawRect(map.coll[tate][yoko], GetColor(255, 255, 255), FALSE);
+			}
+		}
+	}
 	return;
 }
